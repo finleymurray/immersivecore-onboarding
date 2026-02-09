@@ -64,7 +64,7 @@ function buildOnboardingPDFDoc(record) {
   // ======== PAGE 1 ========
 
   // Header bar
-  doc.setFillColor(...blue);
+  doc.setFillColor(...dark);
   doc.rect(0, 0, pw, 26, 'F');
   drawLogo(ml, 8, true);
 
@@ -80,7 +80,7 @@ function buildOnboardingPDFDoc(record) {
   // ---- Section 1: Core Details ----
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...blue);
+  doc.setTextColor(...dark);
   doc.text('1. Core Details', ml, y);
   y += 2;
   drawLine(y);
@@ -90,7 +90,7 @@ function buildOnboardingPDFDoc(record) {
   const detailsBoxH = 10 + 6 * lineH;
   doc.setFillColor(...lightBg);
   doc.roundedRect(ml, y - 3, cw, detailsBoxH, 2, 2, 'F');
-  doc.setDrawColor(...blue);
+  doc.setDrawColor(...dark);
   doc.setLineWidth(0.5);
   doc.roundedRect(ml, y - 3, cw, detailsBoxH, 2, 2, 'S');
 
@@ -108,7 +108,7 @@ function buildOnboardingPDFDoc(record) {
   checkPageBreak(45);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...blue);
+  doc.setTextColor(...dark);
   doc.text('2. HMRC New Starter Checklist', ml, y);
   y += 2;
   drawLine(y);
@@ -135,7 +135,7 @@ function buildOnboardingPDFDoc(record) {
   checkPageBreak(35);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...blue);
+  doc.setTextColor(...dark);
   doc.text('3. Banking Details', ml, y);
   y += 2;
   drawLine(y);
@@ -155,7 +155,7 @@ function buildOnboardingPDFDoc(record) {
   checkPageBreak(60);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...blue);
+  doc.setTextColor(...dark);
   doc.text('4. Operational Specifications', ml, y);
   y += 2;
   drawLine(y);
