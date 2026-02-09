@@ -144,6 +144,12 @@ main {
   gap: 8px;
 }
 
+.page-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 /* ---- Buttons ---- */
 .btn {
   display: inline-block;
@@ -170,6 +176,17 @@ main {
 
 .btn-primary:hover:not(:disabled) {
   background: #ddd;
+}
+
+.btn-secondary {
+  background: #222;
+  color: #ccc;
+  border: 1px solid #555;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #333;
+  color: #fff;
 }
 
 .btn-ghost {

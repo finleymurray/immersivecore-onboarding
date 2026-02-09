@@ -24,7 +24,10 @@ export async function render(el) {
   el.innerHTML = `
     <div class="page-header">
       <h1>Onboarding Dashboard</h1>
-      <a href="#/new" class="btn btn-primary">+ New Onboarding</a>
+      <div class="page-header-actions">
+        <button type="button" id="download-form-btn" class="btn btn-secondary">Download New Starter Form</button>
+        <a href="#/new" class="btn btn-primary">+ New Onboarding</a>
+      </div>
     </div>
 
     <div class="filter-bar">
@@ -105,4 +108,20 @@ export async function render(el) {
   searchInput.addEventListener('input', renderTable);
   statusFilter.addEventListener('change', renderTable);
   renderTable();
+
+  // Download New Starter Form button
+  el.querySelector('#download-form-btn').addEventListener('click', async () => {
+    const btn = el.querySelector('#download-form-btn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    try {
+      const { generateBlankStarterForm } = await import('../utils/blank-form-generator.js');
+      generateBlankStarterForm();
+    } catch (err) {
+      console.error('Failed to generate blank form:', err);
+      alert('Failed to generate form. Please try again.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Download New Starter Form';
+  });
 }
