@@ -92,5 +92,18 @@ export async function createLinkedRTWRecord(onboardingId, fullName, dateOfBirth)
     .single();
 
   if (error) throw error;
+
+  // Create a notification for the pending RTW check
+  try {
+    await sb.from('notifications').insert({
+      source_app: 'rtw-checker',
+      severity: 'warning',
+      title: 'Pending Onboarding RTW: ' + fullName,
+      message: fullName + ' has been onboarded and requires a right to work check.',
+      action_url: 'https://rtw.immersivecore.network/#/record/' + data.id + '/edit',
+      record_id: data.id,
+    });
+  } catch (_) { /* non-blocking */ }
+
   return data;
 }
