@@ -399,13 +399,12 @@ export async function render(el, editId) {
 
           if (pdfBlob) {
             progressMsg.textContent = 'Uploading to Google Drive...';
-            const arrayBuffer = await pdfBlob.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            let binary = '';
-            for (let i = 0; i < bytes.length; i++) {
-              binary += String.fromCharCode(bytes[i]);
-            }
-            const pdfBase64 = btoa(binary);
+            const pdfBase64 = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result.split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(pdfBlob);
+            });
 
             const safeName = data.full_name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
             const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
