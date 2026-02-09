@@ -50,6 +50,29 @@ export async function updateOnboarding(id, updates) {
 }
 
 /**
+ * Sync employment end date from onboarding to the linked RTW record.
+ * RTW uses a 2-year retention period (vs 6-year for onboarding).
+ */
+export async function syncEndDateToRTW(rtwRecordId, employmentEndDate) {
+  const sb = getSupabase();
+  let deletionDueDate = null;
+  if (employmentEndDate) {
+    const d = new Date(employmentEndDate + 'T00:00:00');
+    d.setFullYear(d.getFullYear() + 2);
+    deletionDueDate = d.toISOString().slice(0, 10);
+  }
+  const { error } = await sb
+    .from('rtw_records')
+    .update({
+      employment_end_date: employmentEndDate,
+      deletion_due_date: deletionDueDate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', rtwRecordId);
+  if (error) throw error;
+}
+
+/**
  * Create a partial RTW record linked to this onboarding record.
  * This inserts into the shared rtw_records table.
  */

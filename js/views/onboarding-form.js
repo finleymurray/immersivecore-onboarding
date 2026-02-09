@@ -390,7 +390,48 @@ export async function render(el, editId) {
         });
       }
 
-      // Generate PDF and upload to Google Drive
+      // On edit: regenerate PDF and replace in Google Drive
+      if (isEdit) {
+        try {
+          const { generateOnboardingPDFBlob } = await import('../utils/pdf-generator.js');
+          // Re-fetch the record to include any paper scan update
+          const { fetchOnboarding } = await import('../services/onboarding-service.js');
+          const updatedRecord = await fetchOnboarding(editId);
+          const pdfBlob = generateOnboardingPDFBlob(updatedRecord);
+
+          if (pdfBlob && updatedRecord.gdrive_file_id) {
+            progressMsg.textContent = 'Updating Google Drive PDF...';
+            const pdfBase64 = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result.split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(pdfBlob);
+            });
+
+            const safeName = data.full_name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const fileName = `Onboarding_${safeName}_${dateStr}.pdf`;
+
+            const { replaceFileInGoogleDrive } = await import('../services/gdrive-service.js');
+            const driveResult = await replaceFileInGoogleDrive({
+              oldFileId: updatedRecord.gdrive_file_id,
+              employeeName: data.full_name,
+              fileName,
+              fileBase64: pdfBase64,
+              subfolder: 'Onboarding',
+            });
+
+            await updateOnboarding(editId, {
+              gdrive_file_id: driveResult.file_id,
+              gdrive_pdf_link: driveResult.web_view_link,
+            });
+          }
+        } catch (driveErr) {
+          console.error('Google Drive update failed (non-blocking):', driveErr);
+        }
+      }
+
+      // Generate PDF and upload to Google Drive (new records only)
       if (!isEdit) {
         progressMsg.textContent = 'Generating PDF...';
         try {
@@ -419,6 +460,7 @@ export async function render(el, editId) {
             });
 
             await updateOnboarding(record.id, {
+              gdrive_file_id: driveResult.file_id,
               gdrive_folder_id: driveResult.employee_folder_id,
               gdrive_pdf_link: driveResult.web_view_link,
             });

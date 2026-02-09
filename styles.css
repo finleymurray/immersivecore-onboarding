@@ -643,6 +643,11 @@ main {
   color: #4caf50;
 }
 
+.badge-offboarded {
+  background: #2d2d2d;
+  color: #9ca3af;
+}
+
 /* ---- Detail View ---- */
 .detail-grid {
   display: grid;

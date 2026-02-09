@@ -12,12 +12,14 @@ const STATUS_LABELS = {
   pending: 'Pending',
   rtw_in_progress: 'RTW In Progress',
   complete: 'Complete',
+  offboarded: 'Offboarded',
 };
 
 const STATUS_CLASSES = {
   pending: 'badge-pending',
   rtw_in_progress: 'badge-in-progress',
   complete: 'badge-complete',
+  offboarded: 'badge-offboarded',
 };
 
 export async function render(el) {
@@ -37,6 +39,7 @@ export async function render(el) {
         <option value="pending">Pending</option>
         <option value="rtw_in_progress">RTW In Progress</option>
         <option value="complete">Complete</option>
+        <option value="offboarded">Offboarded</option>
       </select>
     </div>
 

@@ -1,4 +1,4 @@
-import { fetchOnboarding } from '../services/onboarding-service.js';
+import { fetchOnboarding, updateOnboarding, syncEndDateToRTW } from '../services/onboarding-service.js';
 import { getPaperScanUrl } from '../services/storage-service.js';
 import { formatDateUK } from '../utils/date-utils.js';
 
@@ -19,12 +19,14 @@ const STATUS_LABELS = {
   pending: 'Pending',
   rtw_in_progress: 'RTW In Progress',
   complete: 'Complete',
+  offboarded: 'Offboarded',
 };
 
 const STATUS_CLASSES = {
   pending: 'badge-pending',
   rtw_in_progress: 'badge-in-progress',
   complete: 'badge-complete',
+  offboarded: 'badge-offboarded',
 };
 
 export async function render(el, id) {
@@ -118,9 +120,114 @@ export async function render(el, id) {
 
     </div>
 
+    <div class="detail-section" id="offboarding-section">
+      <h2><span class="section-number">&#9744;</span> Off-boarding</h2>
+      <div class="detail-section-body" style="padding:16px;">
+        <p style="font-size:14px;color:var(--text-secondary,#999);margin-bottom:12px;">
+          ${record.employment_end_date
+            ? 'Last date of employment: <strong>' + esc(formatDateUK(record.employment_end_date)) + '</strong>'
+              + (record.deletion_due_date ? ' &mdash; record deletion due ' + esc(formatDateUK(record.deletion_due_date)) : '')
+            : 'No employment end date set. Set one when the employee leaves.'}
+        </p>
+        <div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="end-date-input" style="font-size:13px;">Last date of employment</label>
+            <input type="date" id="end-date-input" class="form-input" value="${record.employment_end_date || ''}" style="max-width:220px;">
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn btn-primary" id="save-end-date-btn" style="padding:8px 16px;">Save</button>
+            ${record.employment_end_date ? '<button type="button" class="btn btn-secondary" id="clear-end-date-btn" style="padding:8px 16px;">Clear</button>' : ''}
+          </div>
+        </div>
+        <div id="end-date-msg" style="margin-top:8px;font-size:13px;"></div>
+      </div>
+    </div>
+
     <div class="detail-meta">
       <p>Created: ${formatDateUK(record.created_at?.slice(0, 10))}</p>
       ${record.rtw_record_id ? `<p><a href="https://rtw.immersivecore.network/#/record/${record.rtw_record_id}">View RTW Record &rarr;</a></p>` : ''}
     </div>
   `;
+
+  // Off-boarding event listeners
+  const saveEndDateBtn = el.querySelector('#save-end-date-btn');
+  const clearEndDateBtn = el.querySelector('#clear-end-date-btn');
+  const endDateInput = el.querySelector('#end-date-input');
+  const endDateMsg = el.querySelector('#end-date-msg');
+
+  if (saveEndDateBtn) {
+    saveEndDateBtn.addEventListener('click', async () => {
+      const value = endDateInput.value || null;
+      if (!value) {
+        endDateMsg.textContent = 'Please select a date.';
+        endDateMsg.style.color = '#ef4444';
+        return;
+      }
+
+      // 6-year retention period for onboarding records
+      const d = new Date(value + 'T00:00:00');
+      d.setFullYear(d.getFullYear() + 6);
+      const deletionDue = d.toISOString().slice(0, 10);
+
+      saveEndDateBtn.disabled = true;
+      saveEndDateBtn.textContent = 'Saving\u2026';
+      endDateMsg.textContent = '';
+
+      try {
+        await updateOnboarding(id, {
+          employment_end_date: value,
+          deletion_due_date: deletionDue,
+          status: 'offboarded',
+        });
+
+        // Sync to linked RTW record (2-year retention)
+        if (record.rtw_record_id) {
+          try {
+            await syncEndDateToRTW(record.rtw_record_id, value);
+          } catch (syncErr) {
+            console.error('Failed to sync end date to RTW:', syncErr);
+          }
+        }
+
+        await render(el, id);
+      } catch (err) {
+        endDateMsg.textContent = 'Failed to save: ' + err.message;
+        endDateMsg.style.color = '#ef4444';
+        saveEndDateBtn.disabled = false;
+        saveEndDateBtn.textContent = 'Save';
+      }
+    });
+  }
+
+  if (clearEndDateBtn) {
+    clearEndDateBtn.addEventListener('click', async () => {
+      clearEndDateBtn.disabled = true;
+      clearEndDateBtn.textContent = 'Clearing\u2026';
+      endDateMsg.textContent = '';
+
+      try {
+        await updateOnboarding(id, {
+          employment_end_date: null,
+          deletion_due_date: null,
+          status: 'complete',
+        });
+
+        // Clear from linked RTW record too
+        if (record.rtw_record_id) {
+          try {
+            await syncEndDateToRTW(record.rtw_record_id, null);
+          } catch (syncErr) {
+            console.error('Failed to clear end date on RTW:', syncErr);
+          }
+        }
+
+        await render(el, id);
+      } catch (err) {
+        endDateMsg.textContent = 'Failed to clear: ' + err.message;
+        endDateMsg.style.color = '#ef4444';
+        clearEndDateBtn.disabled = false;
+        clearEndDateBtn.textContent = 'Clear';
+      }
+    });
+  }
 }
