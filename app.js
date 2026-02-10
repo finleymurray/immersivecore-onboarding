@@ -47,6 +47,24 @@ addRoute('/onboarding/:id/edit', async (el, params) => {
   await render(el, params.id);
 });
 
+addRoute('/network', async (el) => {
+  const { render } = await import('./js/views/network-access.js');
+  await render(el);
+});
+
+// ---- Active nav tab highlighting ----
+function updateActiveTab() {
+  const hash = window.location.hash || '#/';
+  const navOnboarding = document.getElementById('nav-onboarding');
+  const navNetwork = document.getElementById('nav-network');
+
+  if (navOnboarding) navOnboarding.classList.toggle('active', !hash.startsWith('#/network'));
+  if (navNetwork) navNetwork.classList.toggle('active', hash.startsWith('#/network'));
+}
+
+window.addEventListener('hashchange', updateActiveTab);
+updateActiveTab();
+
 // ---- Nav auth state ----
 async function updateNavAuth(session) {
   const userInfoEl = document.getElementById('user-info');

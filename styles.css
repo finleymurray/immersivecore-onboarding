@@ -782,6 +782,58 @@ main {
   font-size: 14px;
 }
 
+/* ---- Active Nav Tab ---- */
+.nav-link.active {
+  background: #333;
+  color: #fff;
+}
+
+/* ---- Confirm Overlay ---- */
+.confirm-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.confirm-dialog {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+}
+
+.confirm-dialog p {
+  color: #ccc;
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.confirm-dialog strong {
+  color: #fff;
+}
+
+/* ---- Info / Success / Error Banners ---- */
+.info-banner {
+  background: #0a3d1f;
+  border: 1px solid #4caf50;
+  color: #4caf50;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.info-banner.error {
+  background: #2a1010;
+  border-color: #d43518;
+  color: #f0a0a0;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 600px) {
   .form-row {
