@@ -1,5 +1,4 @@
 import { getSupabase } from '../supabase-client.js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config.js';
 
 /**
  * Create a new user via the create-user Edge Function.
@@ -8,22 +7,15 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../../config.js';
 export async function createUser({ email, full_name, role, password }) {
   const sb = getSupabase();
   const { data: { session } } = await sb.auth.getSession();
-
   if (!session) throw new Error('Not authenticated');
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/create-user`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-      'apikey': SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ email, full_name, role, password }),
+  const { data, error } = await sb.functions.invoke('create-user', {
+    body: { email, full_name, role, password },
   });
 
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error || 'Failed to create user');
-  return body;
+  if (error) throw new Error(error.message || 'Failed to create user');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 /**
@@ -35,19 +27,13 @@ export async function updateUserRole(userId, role) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/manage-user`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-      'apikey': SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: 'update_role', user_id: userId, role }),
+  const { data, error } = await sb.functions.invoke('manage-user', {
+    body: { action: 'update_role', user_id: userId, role },
   });
 
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error || 'Failed to update user role');
-  return body;
+  if (error) throw new Error(error.message || 'Failed to update user role');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 /**
@@ -59,19 +45,13 @@ export async function deleteUser(userId) {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/manage-user`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-      'apikey': SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify({ action: 'delete', user_id: userId }),
+  const { data, error } = await sb.functions.invoke('manage-user', {
+    body: { action: 'delete', user_id: userId },
   });
 
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error || 'Failed to delete user');
-  return body;
+  if (error) throw new Error(error.message || 'Failed to delete user');
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 /**
