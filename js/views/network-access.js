@@ -86,6 +86,10 @@ async function loadStaff(el) {
             </div>
           </div>
           <button type="submit" class="btn btn-primary" id="create-user-btn">Create user</button>
+          <p style="margin-top:12px;font-size:12px;color:#666;">
+            By creating a user account, you confirm the individual has been informed about how their data is processed.
+            <a href="https://immersivecore.network/privacy-policy.html" target="_blank" style="color:#888;">Privacy Policy</a>
+          </p>
         </form>
       </div>
 
