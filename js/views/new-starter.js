@@ -191,6 +191,14 @@ export async function render(el) {
             I confirm that the information provided on this form is true and complete to the best of my knowledge. I understand that providing false information may result in disciplinary action. I consent to ImmersiveCore processing this data for employment purposes in accordance with GDPR.
           </label>
         </div>
+        <div class="form-group" style="margin-top:16px;">
+          <label>Signature <span class="required">*</span></label>
+          <div id="signature-pad-wrapper" style="border:1px solid #444; border-radius:6px; background:#1a1a1a; position:relative;">
+            <canvas id="signature-pad" width="560" height="160" style="width:100%; display:block; cursor:crosshair;"></canvas>
+            <button type="button" id="clear-signature" class="btn btn-sm btn-secondary" style="position:absolute; top:8px; right:8px;">Clear</button>
+          </div>
+          <p style="font-size:12px; color:#666; margin-top:4px;">Draw your signature above using your mouse or finger.</p>
+        </div>
       </fieldset>
 
       <div class="form-actions">
@@ -222,6 +230,67 @@ export async function render(el) {
     if (val.length > 4) val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4);
     else if (val.length > 2) val = val.slice(0, 2) + '-' + val.slice(2);
     sortCodeInput.value = val;
+  });
+
+  // ---- Signature pad ----
+  const canvas = el.querySelector('#signature-pad');
+  const ctx = canvas.getContext('2d');
+  let isDrawing = false;
+  let hasSigned = false;
+
+  function resizeCanvas() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = rect.width * ratio;
+    canvas.height = 160 * ratio;
+    canvas.style.height = '160px';
+    ctx.scale(ratio, ratio);
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+  }
+  resizeCanvas();
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    isDrawing = true;
+    hasSigned = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(e) {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stopDraw() {
+    isDrawing = false;
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseleave', stopDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', draw, { passive: false });
+  canvas.addEventListener('touchend', stopDraw);
+
+  el.querySelector('#clear-signature').addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSigned = false;
+    resizeCanvas();
   });
 
   // ---- Form submission ----
@@ -260,11 +329,14 @@ export async function render(el) {
       trouser_size: el.querySelector('#trouser_size').value.trim() || null,
     };
 
-    // Check declaration
+    // Check declaration and signature
     const declaration = el.querySelector('#declaration');
     const errors = validateOnboarding(data);
     if (!declaration.checked) {
       errors.push({ field: 'declaration', message: 'You must agree to the declaration before submitting.' });
+    }
+    if (!hasSigned) {
+      errors.push({ field: 'signature', message: 'Please provide your signature.' });
     }
 
     if (errors.length > 0) {
@@ -280,6 +352,9 @@ export async function render(el) {
     progressMsg.textContent = 'Submitting your details...';
 
     try {
+      // Capture signature as data URL
+      data.signature_data = canvas.toDataURL('image/png');
+
       await createPublicOnboarding(data);
 
       // Show success screen

@@ -124,6 +124,14 @@ export async function render(el, id) {
         ` : '<p class="empty-state">No paper scan uploaded.</p>'}
       </div>
 
+      ${record.signature_data ? `
+      <!-- Signature -->
+      <div class="detail-section">
+        <h2><span class="section-number">5</span> Declaration &amp; Signature</h2>
+        <img src="${esc(record.signature_data)}" alt="Signature" style="max-width:100%; max-height:160px; border-radius:4px; background:#1a1a1a; padding:8px;">
+      </div>
+      ` : ''}
+
     </div>
 
     <div class="detail-section" id="offboarding-section" style="${record.status === 'pending' ? 'display:none;' : ''}">
