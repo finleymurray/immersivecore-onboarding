@@ -1,4 +1,4 @@
-import { createPublicOnboarding } from '../services/onboarding-service.js';
+import { createPublicOnboarding, fetchDraftOnboarding, submitDraftOnboarding } from '../services/onboarding-service.js';
 import { validateOnboarding } from '../utils/validation.js';
 
 function esc(str) {
@@ -8,12 +8,30 @@ function esc(str) {
   return d.innerHTML;
 }
 
-export async function render(el) {
+export async function render(el, draftId) {
+  let draft = null;
+  if (draftId) {
+    try {
+      draft = await fetchDraftOnboarding(draftId);
+    } catch (err) {
+      el.innerHTML = `
+        <div class="error-banner" style="margin-top:40px;">
+          <h2>Link not found</h2>
+          <p>This invite link is no longer valid. It may have already been submitted or the link is incorrect.</p>
+          <p>Please contact your manager for a new link.</p>
+        </div>
+      `;
+      return;
+    }
+  }
+
   el.innerHTML = `
     <div class="page-header">
       <div>
         <h1>New Starter Pack</h1>
-        <p class="page-subtitle">Please complete all sections below. Your submission will be reviewed by a manager.</p>
+        <p class="page-subtitle">${draft
+          ? 'Some details have been pre-filled for you. Please check them and complete the remaining sections.'
+          : 'Please complete all sections below. Your submission will be reviewed by a manager.'}</p>
       </div>
     </div>
 
@@ -31,33 +49,33 @@ export async function render(el) {
         <div class="form-row">
           <div class="form-group">
             <label for="full_name">Full name (as on passport / birth certificate) <span class="required">*</span></label>
-            <input type="text" id="full_name" name="full_name" required>
+            <input type="text" id="full_name" name="full_name" required value="${esc(draft?.full_name || '')}">
           </div>
           <div class="form-group">
             <label for="date_of_birth">Date of birth <span class="required">*</span></label>
-            <input type="date" id="date_of_birth" name="date_of_birth" required>
+            <input type="date" id="date_of_birth" name="date_of_birth" required value="${draft?.date_of_birth || ''}">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="ni_number">National Insurance number</label>
-            <input type="text" id="ni_number" name="ni_number" placeholder="QQ 12 34 56 A">
+            <input type="text" id="ni_number" name="ni_number" placeholder="QQ 12 34 56 A" value="${esc(draft?.ni_number || '')}">
           </div>
           <div class="form-group">
             <label for="mobile_number">Mobile number</label>
-            <input type="tel" id="mobile_number" name="mobile_number">
+            <input type="tel" id="mobile_number" name="mobile_number" value="${esc(draft?.mobile_number || '')}">
           </div>
         </div>
 
         <div class="form-group">
           <label for="address">Address (including postcode)</label>
-          <textarea id="address" name="address" rows="3"></textarea>
+          <textarea id="address" name="address" rows="3">${esc(draft?.address || '')}</textarea>
         </div>
 
         <div class="form-group">
           <label for="personal_email">Personal email address</label>
-          <input type="email" id="personal_email" name="personal_email">
+          <input type="email" id="personal_email" name="personal_email" value="${esc(draft?.personal_email || '')}">
         </div>
       </fieldset>
 
@@ -355,7 +373,11 @@ export async function render(el) {
       // Capture signature as data URL
       data.signature_data = canvas.toDataURL('image/png');
 
-      await createPublicOnboarding(data);
+      if (draft) {
+        await submitDraftOnboarding(draftId, data);
+      } else {
+        await createPublicOnboarding(data);
+      }
 
       // Show success screen
       el.innerHTML = `

@@ -17,6 +17,7 @@ const STATEMENT_TEXT = {
 };
 
 const STATUS_LABELS = {
+  draft: 'Invite Sent',
   pending: 'Pending',
   rtw_in_progress: 'RTW In Progress',
   complete: 'Complete',
@@ -24,6 +25,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_CLASSES = {
+  draft: 'badge-draft',
   pending: 'badge-pending',
   rtw_in_progress: 'badge-in-progress',
   complete: 'badge-complete',
@@ -49,7 +51,10 @@ export async function render(el, id) {
         <span class="badge ${STATUS_CLASSES[record.status] || ''}">${STATUS_LABELS[record.status] || record.status}</span>
       </div>
       <div class="header-actions">
-        ${record.status === 'pending' ? `
+        ${record.status === 'draft' ? `
+          <button type="button" class="btn btn-secondary" id="copy-invite-btn">Copy Invite Link</button>
+          <button type="button" class="btn btn-danger" id="reject-btn">Delete</button>
+        ` : record.status === 'pending' ? `
           <button type="button" class="btn btn-primary" id="approve-btn">Approve</button>
           <button type="button" class="btn btn-danger" id="reject-btn">Reject</button>
         ` : `
@@ -134,7 +139,7 @@ export async function render(el, id) {
 
     </div>
 
-    <div class="detail-section" id="offboarding-section" style="${record.status === 'pending' ? 'display:none;' : ''}">
+    <div class="detail-section" id="offboarding-section" style="${(record.status === 'pending' || record.status === 'draft') ? 'display:none;' : ''}">
       <h2><span class="section-number">&#9744;</span> Off-boarding</h2>
       <div class="detail-section-body" style="padding:16px;">
         <p style="font-size:14px;color:var(--text-secondary,#999);margin-bottom:12px;">
@@ -162,6 +167,21 @@ export async function render(el, id) {
       ${record.rtw_record_id ? `<p><a href="https://rtw.immersivecore.network/#/record/${record.rtw_record_id}">View RTW Record &rarr;</a></p>` : ''}
     </div>
   `;
+
+  // ---- Copy invite link for draft records ----
+  const copyInviteBtn = el.querySelector('#copy-invite-btn');
+  if (copyInviteBtn) {
+    copyInviteBtn.addEventListener('click', async () => {
+      const link = window.location.origin + window.location.pathname + '#/newstarter/' + id;
+      try {
+        await navigator.clipboard.writeText(link);
+        copyInviteBtn.textContent = 'Copied!';
+      } catch (_) {
+        prompt('Copy this link:', link);
+      }
+      setTimeout(() => { copyInviteBtn.textContent = 'Copy Invite Link'; }, 2000);
+    });
+  }
 
   // ---- Approve / Reject for pending records ----
   const approveBtn = el.querySelector('#approve-btn');

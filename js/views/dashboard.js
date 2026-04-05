@@ -9,6 +9,7 @@ function esc(str) {
 }
 
 const STATUS_LABELS = {
+  draft: 'Invite Sent',
   pending: 'Pending',
   rtw_in_progress: 'RTW In Progress',
   complete: 'Complete',
@@ -16,6 +17,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_CLASSES = {
+  draft: 'badge-draft',
   pending: 'badge-pending',
   rtw_in_progress: 'badge-in-progress',
   complete: 'badge-complete',
@@ -28,6 +30,7 @@ export async function render(el) {
       <h1>Onboarding Dashboard</h1>
       <div class="page-header-actions">
         <button type="button" id="download-form-btn" class="btn btn-secondary">Download New Starter Form</button>
+        <a href="#/invite" class="btn btn-secondary">Invite New Starter</a>
         <a href="#/new" class="btn btn-primary">+ New Onboarding</a>
       </div>
     </div>
@@ -36,6 +39,7 @@ export async function render(el) {
       <input type="text" id="search-input" class="search-input" placeholder="Search by name...">
       <select id="status-filter" class="status-filter">
         <option value="">All statuses</option>
+        <option value="draft">Invite Sent</option>
         <option value="pending">Pending</option>
         <option value="rtw_in_progress">RTW In Progress</option>
         <option value="complete">Complete</option>

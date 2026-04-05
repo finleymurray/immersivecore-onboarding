@@ -53,9 +53,19 @@ addRoute('/network', async (el) => {
   await render(el);
 });
 
+addRoute('/invite', async (el) => {
+  const { render } = await import('./js/views/invite.js');
+  await render(el);
+});
+
 addRoute('/newstarter', async (el) => {
   const { render } = await import('./js/views/new-starter.js');
   await render(el);
+}, { public: true });
+
+addRoute('/newstarter/:id', async (el, params) => {
+  const { render } = await import('./js/views/new-starter.js');
+  await render(el, params.id);
 }, { public: true });
 
 // ---- Active nav tab highlighting + public route nav hiding ----

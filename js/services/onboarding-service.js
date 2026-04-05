@@ -18,6 +18,59 @@ export async function createPublicOnboarding(record) {
 }
 
 /**
+ * Create a draft record with pre-filled details (manager-only).
+ * Returns the record so the manager can generate an invite link.
+ */
+export async function createDraftOnboarding(record) {
+  const sb = getSupabase();
+  const { data: { user } } = await sb.auth.getUser();
+  const payload = { ...record, status: 'draft', created_by: user.id };
+
+  const { data, error } = await sb
+    .from('onboarding_records')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Fetch a draft record (no auth required — used by public new-starter form).
+ */
+export async function fetchDraftOnboarding(id) {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('onboarding_records')
+    .select('*')
+    .eq('id', id)
+    .eq('status', 'draft')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Submit a draft as pending (no auth required — used by public new-starter form).
+ */
+export async function submitDraftOnboarding(id, updates) {
+  const sb = getSupabase();
+  const payload = { ...updates, status: 'pending', updated_at: new Date().toISOString() };
+
+  const { data, error } = await sb
+    .from('onboarding_records')
+    .update(payload)
+    .eq('id', id)
+    .eq('status', 'draft')
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
  * Delete an onboarding record (used by managers to reject pending submissions).
  */
 export async function deleteOnboarding(id) {

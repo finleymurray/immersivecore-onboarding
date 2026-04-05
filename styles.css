@@ -679,6 +679,11 @@ main {
   font-weight: 600;
 }
 
+.badge-draft {
+  background: #2d2040;
+  color: #b388ff;
+}
+
 .badge-pending {
   background: #3d3000;
   color: #ffc107;
