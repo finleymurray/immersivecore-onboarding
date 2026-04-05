@@ -1,5 +1,34 @@
 import { getSupabase } from '../supabase-client.js';
 
+/**
+ * Public submission — no auth required, status locked to 'pending'.
+ */
+export async function createPublicOnboarding(record) {
+  const sb = getSupabase();
+  const payload = { ...record, status: 'pending', created_by: null };
+
+  const { data, error } = await sb
+    .from('onboarding_records')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Delete an onboarding record (used by managers to reject pending submissions).
+ */
+export async function deleteOnboarding(id) {
+  const sb = getSupabase();
+  const { error } = await sb
+    .from('onboarding_records')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
 export async function fetchAllOnboarding() {
   const sb = getSupabase();
   const { data, error } = await sb

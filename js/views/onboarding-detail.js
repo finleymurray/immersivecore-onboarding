@@ -1,6 +1,7 @@
-import { fetchOnboarding, updateOnboarding, syncEndDateToRTW } from '../services/onboarding-service.js';
+import { fetchOnboarding, updateOnboarding, syncEndDateToRTW, createLinkedRTWRecord, deleteOnboarding } from '../services/onboarding-service.js';
 import { getPaperScanUrl } from '../services/storage-service.js';
 import { formatDateUK } from '../utils/date-utils.js';
+import { navigate } from '../router.js';
 
 function esc(str) {
   if (!str) return '';
@@ -48,8 +49,13 @@ export async function render(el, id) {
         <span class="badge ${STATUS_CLASSES[record.status] || ''}">${STATUS_LABELS[record.status] || record.status}</span>
       </div>
       <div class="header-actions">
-        ${record.gdrive_pdf_link ? `<a href="${esc(record.gdrive_pdf_link)}" target="_blank" class="btn btn-ghost">View in Google Drive</a>` : ''}
-        <a href="#/onboarding/${id}/edit" class="btn btn-primary">Edit</a>
+        ${record.status === 'pending' ? `
+          <button type="button" class="btn btn-primary" id="approve-btn">Approve</button>
+          <button type="button" class="btn btn-danger" id="reject-btn">Reject</button>
+        ` : `
+          ${record.gdrive_pdf_link ? `<a href="${esc(record.gdrive_pdf_link)}" target="_blank" class="btn btn-ghost">View in Google Drive</a>` : ''}
+          <a href="#/onboarding/${id}/edit" class="btn btn-primary">Edit</a>
+        `}
       </div>
     </div>
 
@@ -120,7 +126,7 @@ export async function render(el, id) {
 
     </div>
 
-    <div class="detail-section" id="offboarding-section">
+    <div class="detail-section" id="offboarding-section" style="${record.status === 'pending' ? 'display:none;' : ''}">
       <h2><span class="section-number">&#9744;</span> Off-boarding</h2>
       <div class="detail-section-body" style="padding:16px;">
         <p style="font-size:14px;color:var(--text-secondary,#999);margin-bottom:12px;">
@@ -148,6 +154,110 @@ export async function render(el, id) {
       ${record.rtw_record_id ? `<p><a href="https://rtw.immersivecore.network/#/record/${record.rtw_record_id}">View RTW Record &rarr;</a></p>` : ''}
     </div>
   `;
+
+  // ---- Approve / Reject for pending records ----
+  const approveBtn = el.querySelector('#approve-btn');
+  const rejectBtn = el.querySelector('#reject-btn');
+
+  if (approveBtn) {
+    approveBtn.addEventListener('click', async () => {
+      approveBtn.disabled = true;
+      approveBtn.textContent = 'Approving\u2026';
+
+      try {
+        // Generate PDF and upload to Google Drive
+        try {
+          const { generateOnboardingPDFBlob } = await import('../utils/pdf-generator.js');
+          const pdfBlob = generateOnboardingPDFBlob(record);
+
+          if (pdfBlob) {
+            const pdfBase64 = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result.split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(pdfBlob);
+            });
+
+            const safeName = record.full_name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const fileName = `Onboarding_${safeName}_${dateStr}.pdf`;
+
+            const { uploadToGoogleDrive } = await import('../services/gdrive-service.js');
+            const driveResult = await uploadToGoogleDrive({
+              employeeName: record.full_name,
+              fileName,
+              fileBase64: pdfBase64,
+              subfolder: 'Onboarding',
+            });
+
+            await updateOnboarding(id, {
+              gdrive_file_id: driveResult.file_id,
+              gdrive_folder_id: driveResult.employee_folder_id,
+              gdrive_pdf_link: driveResult.web_view_link,
+            });
+          }
+        } catch (driveErr) {
+          console.error('Google Drive upload failed (non-blocking):', driveErr);
+        }
+
+        // Create linked RTW record
+        try {
+          const rtwRecord = await createLinkedRTWRecord(id, record.full_name, record.date_of_birth);
+          await updateOnboarding(id, {
+            rtw_record_id: rtwRecord.id,
+          });
+        } catch (rtwErr) {
+          console.error('RTW record creation failed (non-blocking):', rtwErr);
+        }
+
+        // Set status to rtw_in_progress
+        await updateOnboarding(id, { status: 'rtw_in_progress' });
+
+        await render(el, id);
+      } catch (err) {
+        console.error('Approve error:', err);
+        approveBtn.disabled = false;
+        approveBtn.textContent = 'Approve';
+        alert('Failed to approve: ' + err.message);
+      }
+    });
+  }
+
+  if (rejectBtn) {
+    rejectBtn.addEventListener('click', () => {
+      // Show confirmation overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-dialog">
+          <p><strong>Reject this submission?</strong></p>
+          <p style="margin-top:8px;">This will permanently delete <strong>${esc(record.full_name)}</strong>'s submission. This cannot be undone.</p>
+          <div class="form-actions" style="margin-top:16px;">
+            <button type="button" class="btn btn-danger" id="confirm-reject">Reject &amp; Delete</button>
+            <button type="button" class="btn btn-ghost" id="cancel-reject">Cancel</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#cancel-reject').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#confirm-reject').addEventListener('click', async () => {
+        const confirmBtn = overlay.querySelector('#confirm-reject');
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Deleting\u2026';
+        try {
+          await deleteOnboarding(id);
+          overlay.remove();
+          navigate('/');
+        } catch (err) {
+          console.error('Reject error:', err);
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Reject & Delete';
+          alert('Failed to delete: ' + err.message);
+        }
+      });
+    });
+  }
 
   // Off-boarding event listeners
   const saveEndDateBtn = el.querySelector('#save-end-date-btn');

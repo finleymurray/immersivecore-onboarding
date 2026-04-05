@@ -53,11 +53,23 @@ addRoute('/network', async (el) => {
   await render(el);
 });
 
-// ---- Active nav tab highlighting ----
+addRoute('/newstarter', async (el) => {
+  const { render } = await import('./js/views/new-starter.js');
+  await render(el);
+}, { public: true });
+
+// ---- Active nav tab highlighting + public route nav hiding ----
 function updateActiveTab() {
   const hash = window.location.hash || '#/';
   const navOnboarding = document.getElementById('nav-onboarding');
   const navNetwork = document.getElementById('nav-network');
+  const navBar = document.querySelector('.nav');
+  const headerDropdown = document.querySelector('.header-nav-dropdown');
+
+  const isPublicRoute = hash.startsWith('#/newstarter');
+
+  if (navBar) navBar.style.display = isPublicRoute ? 'none' : '';
+  if (headerDropdown) headerDropdown.style.display = isPublicRoute ? 'none' : '';
 
   if (navOnboarding) navOnboarding.classList.toggle('active', !hash.startsWith('#/network'));
   if (navNetwork) navNetwork.classList.toggle('active', hash.startsWith('#/network'));
