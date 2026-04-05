@@ -29,7 +29,7 @@ addRoute('/login', async (el) => {
 }, { public: true });
 
 addRoute('/', async (el) => {
-  const { render } = await import('./js/views/dashboard.js');
+  const { render } = await import('./js/views/dashboard.js?v=7');
   await render(el);
 });
 
@@ -39,7 +39,7 @@ addRoute('/new', async (el) => {
 });
 
 addRoute('/onboarding/:id', async (el, params) => {
-  const { render } = await import('./js/views/onboarding-detail.js');
+  const { render } = await import('./js/views/onboarding-detail.js?v=7');
   await render(el, params.id);
 });
 
@@ -59,12 +59,12 @@ addRoute('/invite', async (el) => {
 });
 
 addRoute('/newstarter', async (el) => {
-  const { render } = await import('./js/views/new-starter.js');
+  const { render } = await import('./js/views/new-starter.js?v=7');
   await render(el);
 }, { public: true });
 
 addRoute('/newstarter/:id', async (el, params) => {
-  const { render } = await import('./js/views/new-starter.js');
+  const { render } = await import('./js/views/new-starter.js?v=7');
   await render(el, params.id);
 }, { public: true });
 

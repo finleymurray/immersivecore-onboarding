@@ -58,16 +58,13 @@ export async function submitDraftOnboarding(id, updates) {
   const sb = getSupabase();
   const payload = { ...updates, status: 'pending', updated_at: new Date().toISOString() };
 
-  const { data, error } = await sb
+  const { error } = await sb
     .from('onboarding_records')
     .update(payload)
     .eq('id', id)
-    .eq('status', 'draft')
-    .select()
-    .single();
+    .eq('status', 'draft');
 
   if (error) throw error;
-  return data;
 }
 
 /**
